@@ -1,0 +1,7 @@
+/vendor
+/vendor.pb
+.DS_STORE
+/.idea
+/.vscode
+
+/.o3/k8s/values_local.yaml
