@@ -1,12 +1,14 @@
 syntax = "proto3";
 
+package example;
+
 import "google/api/annotations.proto";
 
 
 service ChatServer {
     rpc CreateUser (CreateUserRequest) returns (CreateUserResponse) {
         option (google.api.http) = {
-            get: "/create_user"
+            post: "/create_user"
 //            response_body: "annotations"
         };
     }

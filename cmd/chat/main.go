@@ -5,14 +5,16 @@ import (
 	"database/sql"
 	"encoding/json"
 	"github.com/frankegoesdown/chat/internal/app"
+	gw "github.com/frankegoesdown/chat/pkg/chat/api"
 	"github.com/go-chi/chi"
 	_ "github.com/lib/pq"
 	"github.com/pusher/chatkit-server-go"
+	"google.golang.org/grpc"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
-	gw "pkg/chat/api/chat"
 )
 
 type config struct {
@@ -36,13 +38,41 @@ func (c *config) newConfig() *config {
 	return c
 }
 
+type myService struct{}
+
+//func (s *myService) CreateUser(req *gw.CreateUserRequest) (gw.CreateUserResponse, error) {
+//	g := gw.CreateUserResponse{}
+//	return g, nil
+//}
+
+func (c *myService) CreateUser(ctx context.Context, in *gw.CreateUserRequest) (*gw.CreateUserResponse, error) {
+	g := gw.CreateUserResponse{}
+	return &g, nil
+}
+
+
+func newServer() *myService {
+	return new(myService)
+}
+
 func main() {
 	var conf config
 	conf.newConfig()
+	ctx := context.Background()
+	cnmToGatePort := ":50052"
 
-	err := gw.RegisterYourServiceHandlerFromEndpoint(ctx, mux, *grpcServerEndpoint, opts)
+	lis, err := net.Listen("tcp", cnmToGatePort)
+	if err != nil {
+		log.Println("failed to listen: ", err)
+	}
+	s := grpc.NewServer()
+
+	gw.RegisterChatServerServer(s, newServer())
 	if err != nil {
 		log.Println(err)
+	}
+	if err := s.Serve(lis); err != nil {
+		log.Println("failed to serve: ", err)
 	}
 
 	db, err := sql.Open("postgres", conf.DbConnectionString)
@@ -59,8 +89,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	ctx := context.Background()
 
 	r := chi.NewRouter()
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
