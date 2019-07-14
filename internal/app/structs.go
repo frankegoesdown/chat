@@ -8,6 +8,19 @@ type Message struct {
 	Text     string `json:"text"`
 	SenderID string `json:"sender_id"`
 }
+type Part struct {
+	Type    string  `json:"type"`
+	Content *string `json:"content,omitempty"`
+	URL     *string `json:"url,omitempty"`
+	//Attachment *Attachment `json:"attachment,omitempty"`
+}
+
+// Message struct
+type MultiPartMessage struct {
+	RoomID   string            `json:"room_id"`
+	SenderID string            `json:"sender_id"`
+	Parts    []chatkit.NewPart `json:"parts"`
+}
 
 // Room struct
 type Room struct {

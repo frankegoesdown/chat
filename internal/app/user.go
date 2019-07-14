@@ -2,18 +2,18 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"github.com/pusher/chatkit-server-go"
 )
 
 // CreateUser method for user creating
-func CreateUser(ctx context.Context, client *chatkit.Client, userOptions chatkit.CreateUserOptions) error {
+func CreateUser(ctx context.Context, db *sql.DB, client *chatkit.Client, userOptions chatkit.CreateUserOptions) error {
 	err := client.CreateUser(ctx, userOptions)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-
 
 // CreateUsers method for users creating
 func CreateUsers(ctx context.Context, client *chatkit.Client, userOptions []chatkit.CreateUserOptions) error {
@@ -41,6 +41,3 @@ func DeleteUser(ctx context.Context, client *chatkit.Client, userID string) erro
 	}
 	return nil
 }
-
-
-

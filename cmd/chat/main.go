@@ -2,19 +2,64 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"github.com/frankegoesdown/chat/internal/app"
 	"github.com/go-chi/chi"
+	_ "github.com/lib/pq"
 	"github.com/pusher/chatkit-server-go"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"log"
 	"net/http"
+	gw "pkg/chat/api/chat"
 )
 
-func main() {
-	client, err := chatkit.NewClient("v1:us1:89d2abb9-db24-4959-9721-1559acafe0cd", "49d4d308-af02-4425-90d7-be258dde616d:TNZ9zAm+TwynR0cnspwNkkDp5dadYf810LCH7s+Unsw=")
+type config struct {
+	DbConnectionString string `yaml:"dbConnectionString"`
+	InstanceLocator    string `yaml:"instanceLocator"`
+	SecretKey          string `yaml:"secretKey"`
+	CoreAddress        string `yaml:"coreAddress"`
+}
+
+func (c *config) newConfig() *config {
+
+	yamlFile, err := ioutil.ReadFile("config.yaml")
 	if err != nil {
-		log.Println("can't make new client")
+		log.Printf("yamlFile.Get err   #%v ", err)
 	}
+	err = yaml.Unmarshal(yamlFile, c)
+	if err != nil {
+		log.Fatalf("Unmarshal: %v", err)
+	}
+
+	return c
+}
+
+func main() {
+	var conf config
+	conf.newConfig()
+
+	err := gw.RegisterYourServiceHandlerFromEndpoint(ctx, mux, *grpcServerEndpoint, opts)
+	if err != nil {
+		log.Println(err)
+	}
+
+	db, err := sql.Open("postgres", conf.DbConnectionString)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client, err := chatkit.NewClient(conf.InstanceLocator, conf.SecretKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	ctx := context.Background()
 
 	r := chi.NewRouter()
@@ -93,7 +138,7 @@ func main() {
 			w.Write([]byte(err.Error()))
 		}
 
-		err = app.CreateUser(ctx, client, userOptions)
+		err = app.CreateUser(ctx, db, client, userOptions)
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -195,7 +240,7 @@ func main() {
 	r.Post("/send_multipart_message", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		//var messageOptions chatkit.SendMessageOptions
-		var message app.Message
+		var message app.MultiPartMessage
 		err := json.NewDecoder(r.Body).Decode(&message)
 		if err != nil {
 			log.Println(err)
@@ -203,13 +248,16 @@ func main() {
 			w.Write([]byte(err.Error()))
 		}
 
+		Parts := message.Parts
 		// TODO: another way to get it from client
-		messageOptions := chatkit.SendMessageOptions{
+		messageOptions := chatkit.SendMultipartMessageOptions{
 			RoomID:   message.RoomID,
-			Text:     message.Text,
-			SenderID: message.SenderID}
+			SenderID: message.SenderID,
+			Parts:    Parts}
 
-		_, err = app.SendMessage(ctx, client, messageOptions)
+		log.Println(message)
+		log.Println(messageOptions)
+		_, err = app.SendMultipartMessage(ctx, client, messageOptions)
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -222,3 +270,30 @@ func main() {
 	http.ListenAndServe(":3001", r)
 	//client.AddUsersToRoom()
 }
+
+//func run() error {
+//	ctx := context.Background()
+//	ctx, cancel := context.WithCancel(ctx)
+//	defer cancel()
+//
+//	// Register gRPC server endpoint
+//	// Note: Make sure the gRPC server is running properly and accessible
+//	mux := runtime.NewServeMux()
+//	opts := []grpc.DialOption{grpc.WithInsecure()}
+//	err := gw.RegisterYourServiceHandlerFromEndpoint(ctx, mux,  *grpcServerEndpoint, opts)
+//	if err != nil {
+//		return err
+//	}
+//
+//	// Start HTTP server (and proxy calls to gRPC server endpoint)
+//	return http.ListenAndServe(":8081", mux)
+//}
+
+//func main() {
+//	flag.Parse()
+//	defer glog.Flush()
+//
+//	if err := run(); err != nil {
+//		glog.Fatal(err)
+//	}
+//}

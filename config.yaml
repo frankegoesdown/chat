@@ -1,0 +1,4 @@
+dbConnectionString: user=achernikov dbname=facebid sslmode=disable
+instanceLocator: v1:us1:89d2abb9-db24-4959-9721-1559acafe0cd
+secretKey: 49d4d308-af02-4425-90d7-be258dde616d:TNZ9zAm+TwynR0cnspwNkkDp5dadYf810LCH7s+Unsw=
+coreAddress: null

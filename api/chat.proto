@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+import "google/api/annotations.proto";
+
+
+service ChatServer {
+    rpc CreateUser (CreateUserRequest) returns (CreateUserResponse) {
+        option (google.api.http) = {
+            get: "/create_user"
+//            response_body: "annotations"
+        };
+    }
+
+}
+
+message CreateUserRequest {
+    string id = 1;
+    string name = 2;
+    string avatar_url = 3;
+}
+
+message CreateUserResponse {
+    int32 status_code = 1;
+    string error = 2;
+}
+
+// https://github.com/grpc-ecosystem/grpc-gateway
+//protoc -I/usr/local/include -I. \
+//-I$GOPATH/src \
+//-I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
+//--go_out=pkg/chat \
+//api/chat.proto
